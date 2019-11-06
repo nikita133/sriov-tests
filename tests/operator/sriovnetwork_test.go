@@ -71,14 +71,14 @@ var _ = Describe("Operator", func() {
 		}
 		sriovnets := GenerateSriovNetworkCRs(namespace, specs)
 		DescribeTable("should be possible to create net-att-def",
-			func(cr *sriovnetworkv1.SriovNetwork) {
+			func(cr sriovnetworkv1.SriovNetwork) {
 				var err error
-				expect := GenerateExpectedNetConfig(cr)
+				expect := GenerateExpectedNetConfig(&cr)
 
 				By("Create the SriovNetwork Custom Resource")
 				// get global framework variables
 				f := framework.Global
-				err = f.Client.Create(goctx.TODO(), cr, &framework.CleanupOptions{TestContext: &oprctx, Timeout: ApiTimeout, RetryInterval: RetryInterval})
+				err = f.Client.Create(goctx.TODO(), &cr, &framework.CleanupOptions{TestContext: &oprctx, Timeout: ApiTimeout, RetryInterval: RetryInterval})
 				Expect(err).NotTo(HaveOccurred())
 				ns := namespace
 				if cr.Spec.NetworkNamespace != "" {
@@ -103,10 +103,10 @@ var _ = Describe("Operator", func() {
 				err = WaitForNamespacedObjectDeleted(netAttDef, f.Client, ns, cr.GetName(), RetryInterval, Timeout)
 				Expect(err).NotTo(HaveOccurred())
 			},
-			Entry("with vlan flag", sriovnets[0]),
-			Entry("with networkNamespace flag", sriovnets[1]),
-			Entry("with SpoofChk flag on", sriovnets[2]),
-			Entry("with Trust flag on", sriovnets[3]),
+			Entry("with vlan flag", sriovnets["test-0"]),
+			Entry("with networkNamespace flag", sriovnets["test-1"]),
+			Entry("with SpoofChk flag on", sriovnets["test-2"]),
+			Entry("with Trust flag on", sriovnets["test-3"]),
 		)
 
 		newSpecs := map[string]sriovnetworkv1.SriovNetworkSpec{
@@ -161,10 +161,10 @@ var _ = Describe("Operator", func() {
 				Expect(anno["k8s.v1.cni.cncf.io/resourceName"]).To(Equal("openshift.io/" + new.Spec.ResourceName))
 				Expect(strings.TrimSpace(netAttDef.Spec.Config)).To(Equal(expect))
 			},
-			Entry("with vlan flag and ipam updated", *sriovnets[4], *newsriovnets[0]),
-			Entry("with networkNamespace flag", *sriovnets[4], *newsriovnets[1]),
-			Entry("with SpoofChk flag on", *sriovnets[4], *newsriovnets[2]),
-			Entry("with Trust flag on", *sriovnets[4], *newsriovnets[3]),
+			Entry("with vlan flag and ipam updated", sriovnets["test-4"], newsriovnets["new-0"]),
+			Entry("with networkNamespace flag", sriovnets["test-4"], newsriovnets["new-1"]),
+			Entry("with SpoofChk flag on", sriovnets["test-4"], newsriovnets["new-2"]),
+			Entry("with Trust flag on", sriovnets["test-4"], newsriovnets["new-3"]),
 		)
 	})
 })

@@ -104,11 +104,11 @@ func WaitForNamespacedObjectDeleted(obj runtime.Object, client framework.Framewo
 	return nil
 }
 
-func GenerateSriovNetworkCRs(namespace string, specs map[string]sriovnetworkv1.SriovNetworkSpec) []*sriovnetworkv1.SriovNetwork {
-	var crs []*sriovnetworkv1.SriovNetwork
+func GenerateSriovNetworkCRs(namespace string, specs map[string]sriovnetworkv1.SriovNetworkSpec) map[string]sriovnetworkv1.SriovNetwork {
+	crs := make(map[string]sriovnetworkv1.SriovNetwork)
 
 	for k, v := range specs {
-		crs = append(crs, &sriovnetworkv1.SriovNetwork{
+		crs[k] = sriovnetworkv1.SriovNetwork{
 			TypeMeta: metav1.TypeMeta{
 				Kind:       "SriovNetwork",
 				APIVersion: "sriovnetwork.openshift.io/v1",
@@ -118,7 +118,7 @@ func GenerateSriovNetworkCRs(namespace string, specs map[string]sriovnetworkv1.S
 				Namespace: namespace,
 			},
 			Spec: v,
-		})
+		}
 	}
 	return crs
 }
