@@ -7,7 +7,7 @@ require (
 	github.com/onsi/ginkgo v1.10.3
 	github.com/onsi/gomega v1.7.1
 	github.com/openshift/sriov-network-operator v0.0.0-20191101042859-441aba62cfe4
-	github.com/operator-framework/operator-sdk v0.12.0
+	github.com/operator-framework/operator-sdk v0.11.0
 	github.com/smartystreets/goconvey v1.6.4
 	k8s.io/api v0.0.0
 	k8s.io/apimachinery v0.0.0
