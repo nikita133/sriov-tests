@@ -7,7 +7,7 @@ import (
 	// "reflect"
 	// "strings"
 	// "testing"
-	// "time"
+	"time"
 
 	// dptypes "github.com/intel/sriov-network-device-plugin/pkg/types"
 	framework "github.com/operator-framework/operator-sdk/pkg/test"
@@ -174,6 +174,21 @@ var _ = Describe("Operator", func() {
 			validateCfg = &admv1beta1.ValidatingWebhookConfiguration{}
 			err = WaitForNamespacedObject(validateCfg, f.Client, namespace, "operator-webhook-config", RetryInterval, Timeout)
 			Expect(err).NotTo(HaveOccurred())
+		})
+		It("should be able to update the node selector of sriov-network-config-daemon", func() {
+			f := framework.Global
+			config := &sriovnetworkv1.SriovOperatorConfig{}
+			err := WaitForNamespacedObject(config, f.Client, namespace, "default", RetryInterval, Timeout)
+			Expect(err).NotTo(HaveOccurred())
+			config.Spec.ConfigDaemonNodeSelector=map[string]string{"node-role.kubernetes.io/worker":""}
+			err = f.Client.Update(goctx.TODO(), config)
+			Expect(err).NotTo(HaveOccurred())
+
+			time.Sleep(3 * time.Second)
+			daemonSet := &appsv1.DaemonSet{}
+			err = WaitForDaemonSetReady(daemonSet, f.Client, namespace, "sriov-network-config-daemon", RetryInterval, Timeout)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(daemonSet.Spec.Template.Spec.NodeSelector).To(Equal(config.Spec.ConfigDaemonNodeSelector))
 		})
 	})
 })
