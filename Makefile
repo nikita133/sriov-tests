@@ -1,4 +1,7 @@
-.PHONY: e2e
+.PHONY: e2e operator
+
+operator:
+	./scripts/run-test.sh operator
 
 e2e:
-	./scripts/run-operator-e2e.sh
+	./scripts/run-test.sh e2e

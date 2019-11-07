@@ -34,14 +34,6 @@ import (
 )
 
 var _ = Describe("Operator", func() {
-	BeforeEach(func() {
-		// get global framework variables
-		f := framework.Global
-		// wait for sriov-network-operator to be ready
-		deploy := &appsv1.Deployment{}
-		err := WaitForNamespacedObject(deploy, f.Client, namespace, "sriov-network-operator", RetryInterval, Timeout)
-		Expect(err).NotTo(HaveOccurred())
-	})
 
 	AfterEach(func() {
 		// get global framework variables
@@ -59,7 +51,7 @@ var _ = Describe("Operator", func() {
 		Expect(err).NotTo(HaveOccurred())
 	})
 
-	Describe("When operator up", func() {
+	Context("When operator up", func() {
 		It("should have default operator config", func() {
 			// get global framework variables
 			f := framework.Global
@@ -95,9 +87,10 @@ var _ = Describe("Operator", func() {
 		)
 	})
 
-	Describe("Update operator config", func() {
+	Context("Update operator config", func() {
+
 		It("should be able to turn network-resources-injector on/off", func() {
-			// Turn off
+			By("set disable to enableInjector")
 			f := framework.Global
 			config := &sriovnetworkv1.SriovOperatorConfig{}
 			err := WaitForNamespacedObject(config, f.Client, namespace, "default", RetryInterval, Timeout)
@@ -115,7 +108,7 @@ var _ = Describe("Operator", func() {
 			err = WaitForNamespacedObjectDeleted(mutateCfg, f.Client, namespace, "network-resources-injector-config", RetryInterval, Timeout)
 			Expect(err).NotTo(HaveOccurred())
 
-			// Turn back on
+			By("set enable to enableInjector")
 			err = WaitForNamespacedObject(config, f.Client, namespace, "default", RetryInterval, Timeout)
 			Expect(err).NotTo(HaveOccurred())
 
@@ -133,7 +126,8 @@ var _ = Describe("Operator", func() {
 		})
 
 		It("should be able to turn operator-webhook on/off", func() {
-			// Turn off
+
+			By("set disable to enableOperatorWebhook")
 			f := framework.Global
 			config := &sriovnetworkv1.SriovOperatorConfig{}
 			err := WaitForNamespacedObject(config, f.Client, namespace, "default", RetryInterval, Timeout)
@@ -155,7 +149,7 @@ var _ = Describe("Operator", func() {
 			err = WaitForNamespacedObjectDeleted(validateCfg, f.Client, namespace, "operator-webhook-config", RetryInterval, Timeout)
 			Expect(err).NotTo(HaveOccurred())
 
-			// Turn back on
+			By("set disable to enableOperatorWebhook")
 			err = WaitForNamespacedObject(config, f.Client, namespace, "default", RetryInterval, Timeout)
 			Expect(err).NotTo(HaveOccurred())
 
@@ -176,11 +170,13 @@ var _ = Describe("Operator", func() {
 			Expect(err).NotTo(HaveOccurred())
 		})
 		It("should be able to update the node selector of sriov-network-config-daemon", func() {
+
+			By("specify the configDaemonNodeSelector")
 			f := framework.Global
 			config := &sriovnetworkv1.SriovOperatorConfig{}
 			err := WaitForNamespacedObject(config, f.Client, namespace, "default", RetryInterval, Timeout)
 			Expect(err).NotTo(HaveOccurred())
-			config.Spec.ConfigDaemonNodeSelector=map[string]string{"node-role.kubernetes.io/worker":""}
+			config.Spec.ConfigDaemonNodeSelector = map[string]string{"node-role.kubernetes.io/worker": ""}
 			err = f.Client.Update(goctx.TODO(), config)
 			Expect(err).NotTo(HaveOccurred())
 

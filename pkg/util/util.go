@@ -2,14 +2,14 @@ package util
 
 import (
 	goctx "context"
-	// "encoding/json"
+	"encoding/json"
 	"fmt"
-	// "reflect"
+	"reflect"
 	// "strings"
 	// "testing"
 	"time"
 
-	// dptypes "github.com/intel/sriov-network-device-plugin/pkg/types"
+	dptypes "github.com/intel/sriov-network-device-plugin/pkg/types"
 	framework "github.com/operator-framework/operator-sdk/pkg/test"
 	// "github.com/operator-framework/operator-sdk/pkg/test/e2eutil"
 	appsv1 "k8s.io/api/apps/v1"
@@ -151,4 +151,42 @@ func GenerateExpectedNetConfig(cr *sriovnetworkv1.SriovNetwork) string {
 	vlanQoS := cr.Spec.VlanQoS
 
 	return fmt.Sprintf(`{ "cniVersion":"0.3.1", "name":"sriov-net", "type":"sriov", "vlan":%d,%s%s%s"vlanQoS":%d,"ipam":%s }`, cr.Spec.Vlan, spoofchk, trust, state, vlanQoS, cr.Spec.IPAM)
+}
+
+func ValidateDevicePluginConfig(np *sriovnetworkv1.SriovNetworkNodePolicy, rawConfig string) error {
+	rcl := dptypes.ResourceConfList{}
+
+	if err := json.Unmarshal([]byte(rawConfig), &rcl); err != nil {
+		return err
+	}
+
+	if len(rcl.ResourceList) != 1 {
+		return fmt.Errorf("number of resources in config is incorrect: %d", len(rcl.ResourceList))
+	}
+
+	rc := rcl.ResourceList[0]
+	if rc.IsRdma != np.Spec.IsRdma || rc.ResourceName != np.Spec.ResourceName || !validateSelector(&rc, &np.Spec.NicSelector) {
+		return fmt.Errorf("content of config is incorrect")
+	}
+
+	return nil
+}
+
+func validateSelector(rc *dptypes.ResourceConfig, ns *sriovnetworkv1.SriovNetworkNicSelector) bool {
+	if ns.DeviceID != "" {
+		if len(rc.Selectors.Devices) != 1 || ns.DeviceID != rc.Selectors.Devices[0] {
+			return false
+		}
+	}
+	if ns.Vendor != "" {
+		if len(rc.Selectors.Vendors) != 1 || ns.Vendor != rc.Selectors.Vendors[0] {
+			return false
+		}
+	}
+	if len(ns.PfNames) > 0 {
+		if !reflect.DeepEqual(ns.PfNames, rc.Selectors.PfNames) {
+			return false
+		}
+	}
+	return true
 }

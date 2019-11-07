@@ -1,4 +1,4 @@
-package operator
+package e2e
 
 import (
 	// goctx "context"
@@ -69,5 +69,5 @@ var _ = BeforeSuite(func() {
 })
 
 var _ = AfterSuite(func() {
-	oprctx.Cleanup()
+	// oprctx.Cleanup()
 })
