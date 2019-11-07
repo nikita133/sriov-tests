@@ -8,6 +8,6 @@ import (
 )
 
 func TestMain(m *testing.M) {
-	fmt.Printf("Start TestMain\n")
+	fmt.Printf("Start Operator TestMain\n")
 	f.MainEntry(m)
 }

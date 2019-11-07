@@ -4,6 +4,7 @@ go 1.13
 
 require (
 	github.com/intel/sriov-network-device-plugin v3.0.0+incompatible
+	github.com/jteeuwen/go-bindata v3.0.7+incompatible // indirect
 	github.com/onsi/ginkgo v1.10.3
 	github.com/onsi/gomega v1.7.1
 	github.com/openshift/sriov-network-operator v0.0.0-20191101042859-441aba62cfe4

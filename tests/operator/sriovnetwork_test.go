@@ -12,7 +12,7 @@ import (
 	// dptypes "github.com/intel/sriov-network-device-plugin/pkg/types"
 	framework "github.com/operator-framework/operator-sdk/pkg/test"
 	// "github.com/operator-framework/operator-sdk/pkg/test/e2eutil"
-	appsv1 "k8s.io/api/apps/v1"
+	// appsv1 "k8s.io/api/apps/v1"
 	// corev1 "k8s.io/api/core/v1"
 	// "k8s.io/apimachinery/pkg/api/errors"
 	// metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -33,16 +33,8 @@ import (
 )
 
 var _ = Describe("Operator", func() {
-	BeforeEach(func() {
-		// get global framework variables
-		f := framework.Global
-		// wait for sriov-network-operator to be ready
-		deploy := &appsv1.Deployment{}
-		err := WaitForNamespacedObject(deploy, f.Client, namespace, "sriov-network-operator", RetryInterval, Timeout)
-		Expect(err).NotTo(HaveOccurred())
-	})
 
-	Describe("with SriovNetwork", func() {
+	Context("with SriovNetwork", func() {
 		specs := map[string]sriovnetworkv1.SriovNetworkSpec{
 			"test-0": {
 				ResourceName: "resource_1",
@@ -152,7 +144,7 @@ var _ = Describe("Operator", func() {
 					ns = new.Spec.NetworkNamespace
 				}
 
-				time.Sleep(time.Second * 1)
+				time.Sleep(time.Second * 2)
 				netAttDef := &netattdefv1.NetworkAttachmentDefinition{}
 				err = WaitForNamespacedObject(netAttDef, f.Client, ns, old.GetName(), RetryInterval, Timeout)
 				Expect(err).NotTo(HaveOccurred())
