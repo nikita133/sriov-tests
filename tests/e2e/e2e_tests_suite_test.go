@@ -69,5 +69,5 @@ var _ = BeforeSuite(func() {
 })
 
 var _ = AfterSuite(func() {
-	// oprctx.Cleanup()
+	oprctx.Cleanup()
 })
