@@ -3,7 +3,7 @@ package e2e
 import (
 	goctx "context"
 	// "encoding/json"
-	// "fmt"
+	"fmt"
 	// "reflect"
 	// "strings"
 	// "testing"
@@ -93,7 +93,7 @@ var _ = Describe("Operator", func() {
 			err = f.Client.Create(goctx.TODO(), policy, &framework.CleanupOptions{TestContext: &oprctx, Timeout: ApiTimeout, RetryInterval: RetryInterval})
 			Expect(err).NotTo(HaveOccurred())
 
-			time.Sleep(60 * time.Second)
+			time.Sleep(3 * time.Second)
 			config := &corev1.ConfigMap{}
 			err = WaitForNamespacedObject(config, f.Client, namespace, "device-plugin-config", RetryInterval, Timeout)
 			Expect(err).NotTo(HaveOccurred())
@@ -121,8 +121,10 @@ var _ = Describe("Operator", func() {
 			name := nodeList.Items[0].GetName()
 
 			nodeState := &sriovnetworkv1.SriovNetworkNodeState{}
-			err = WaitForNamespacedObject(nodeState, f.Client, namespace, name, RetryInterval, Timeout)
+			err = WaitForSriovNetworkNodeStateReady(nodeState, policy, f.Client, namespace, name, RetryInterval, Timeout)
 			Expect(err).NotTo(HaveOccurred())
+
+			fmt.Fprintf(GinkgoWriter, "nodeState: %v\n\n", nodeState)
 
 			found := false
 			for _, address := range policy.Spec.NicSelector.RootDevices {
@@ -144,10 +146,12 @@ var _ = Describe("Operator", func() {
 					if iface.PciAddress == address {
 						found = true
 						Expect(iface.NumVfs).To(Equal(policy.Spec.NumVfs))
-						// Expect(iface.Mtu).To(Equal(policy.Spec.Mtu))
+						Expect(iface.Mtu).To(Equal(policy.Spec.Mtu))
 						Expect(len(iface.VFs)).To(Equal(policy.Spec.NumVfs))
 						for _, vf := range iface.VFs {
-							// Expect(vf.Mtu).To(Equal(policy.Spec.Mtu))
+							if policy.Spec.DeviceType == "netdevice" || policy.Spec.DeviceType == ""{
+								Expect(vf.Mtu).To(Equal(policy.Spec.Mtu))
+							}
 							Expect(vf.Driver).To(Equal(policy.Spec.DeviceType))
 						}
 						break

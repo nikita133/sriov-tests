@@ -34,6 +34,51 @@ var (
 	CleanupTimeout       = time.Second * 5
 )
 
+func WaitForSriovNetworkNodeStateReady(nodeState *sriovnetworkv1.SriovNetworkNodeState, policy *sriovnetworkv1.SriovNetworkNodePolicy, client framework.FrameworkClient, namespace, name string, retryInterval, timeout time.Duration) error {
+
+	err := wait.PollImmediate(retryInterval, timeout, func() (done bool, err error) {
+		ctx, cancel := goctx.WithTimeout(goctx.Background(), ApiTimeout)
+		defer cancel()
+		err = client.Get(ctx, types.NamespacedName{Name: name, Namespace: namespace}, nodeState)
+		if err != nil {
+			if errors.IsNotFound(err) {
+				return false, nil
+			}
+			return false, err
+		}
+		if nodeState.Status.SyncStatus != "Succeeded" {
+			return false, nil
+		}
+		// for _, address := range policy.Spec.NicSelector.RootDevices {
+
+		// 	// for _, spi := range nodeState.Spec.Interfaces {
+		// 	// 	if address == spi.PciAddress {
+		// 	// 		if spi.NumVfs != policy.Spec.NumVfs {
+		// 	// 			return false, nil
+		// 	// 		}
+		// 	// 	}
+		// 	// }
+		// 	// for _, sti := range nodeState.Status.Interfaces {
+		// 	// 	if address == sti.PciAddress {
+		// 	// 		if sti.NumVfs != policy.Spec.NumVfs {
+		// 	// 			return false, nil
+		// 	// 		}
+		// 	// 		if len(sti.VFs) != policy.Spec.NumVfs {
+		// 	// 			return false, nil
+		// 	// 		}
+		// 	// 	}
+		// 	// }
+		// }
+		return true, nil
+	})
+	if err != nil {
+		fmt.Printf("failed to wait for ds %s/%s to be ready: %v", namespace, name, err)
+		return err
+	}
+
+	return nil
+}
+
 func WaitForDaemonSetReady(ds *appsv1.DaemonSet, client framework.FrameworkClient, namespace, name string, retryInterval, timeout time.Duration) error {
 
 	err := wait.PollImmediate(retryInterval, timeout, func() (done bool, err error) {
