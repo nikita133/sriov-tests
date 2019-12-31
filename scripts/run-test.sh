@@ -22,7 +22,7 @@ envsubst < deploy/operator.yaml  > $OPERATOR_ROOT/deploy/operator-init.yaml
 
 cd $DIR
 # GO111MODULE=on go test ./tests/operator/...  -root=$OPERATOR_ROOT -kubeconfig=$KUBECONFIG -globalMan $OPERATOR_ROOT/deploy/crds/sriovnetwork.openshift.io_sriovnetworks_crd.yaml -namespacedMan $OPERATOR_ROOT/deploy/operator-init.yaml -v -singleNamespace true
-GO111MODULE=on ginkgo -v --progress ./tests/$1 -- -root=$OPERATOR_ROOT -kubeconfig=$KUBECONFIG -globalMan $OPERATOR_ROOT/deploy/crds/sriovnetwork.openshift.io_sriovnetworks_crd.yaml -namespacedMan $OPERATOR_ROOT/deploy/operator-init.yaml -singleNamespace true
+ginkgo -v --progress ./tests/$1 -- -root=$OPERATOR_ROOT -kubeconfig=$KUBECONFIG -globalMan $OPERATOR_ROOT/deploy/crds/sriovnetwork.openshift.io_sriovnetworks_crd.yaml -namespacedMan $OPERATOR_ROOT/deploy/operator-init.yaml -singleNamespace true
 
 cd $OPERATOR_ROOT
 make undeploy
