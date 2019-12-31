@@ -4,12 +4,10 @@ go 1.13
 
 require (
 	github.com/intel/sriov-network-device-plugin v3.0.0+incompatible
-	github.com/jteeuwen/go-bindata v3.0.7+incompatible // indirect
 	github.com/onsi/ginkgo v1.10.3
 	github.com/onsi/gomega v1.7.1
-	github.com/openshift/sriov-network-operator v0.0.0-20191101042859-441aba62cfe4
-	github.com/operator-framework/operator-sdk v0.11.0
-	github.com/smartystreets/goconvey v1.6.4
+	github.com/openshift/sriov-network-operator v0.0.0-20191227022426-432454ac41d1
+	github.com/operator-framework/operator-sdk v0.12.1-0.20191112211508-82fc57de5e5b
 	k8s.io/api v0.0.0
 	k8s.io/apimachinery v0.0.0
 	sigs.k8s.io/controller-runtime v0.3.0
