@@ -34,8 +34,8 @@ var (
 	CleanupTimeout       = time.Second * 5
 )
 
-func WaitForSriovNetworkNodeStateReady(nodeState *sriovnetworkv1.SriovNetworkNodeState, policy *sriovnetworkv1.SriovNetworkNodePolicy, client framework.FrameworkClient, namespace, name string, retryInterval, timeout time.Duration) error {
-
+func WaitForSriovNetworkNodeStateReady(nodeState *sriovnetworkv1.SriovNetworkNodeState, client framework.FrameworkClient, namespace, name string, retryInterval, timeout time.Duration) error {
+	time.Sleep(30 * time.Second)
 	err := wait.PollImmediate(retryInterval, timeout, func() (done bool, err error) {
 		ctx, cancel := goctx.WithTimeout(goctx.Background(), ApiTimeout)
 		defer cancel()
@@ -49,26 +49,6 @@ func WaitForSriovNetworkNodeStateReady(nodeState *sriovnetworkv1.SriovNetworkNod
 		if nodeState.Status.SyncStatus != "Succeeded" {
 			return false, nil
 		}
-		// for _, address := range policy.Spec.NicSelector.RootDevices {
-
-		// 	// for _, spi := range nodeState.Spec.Interfaces {
-		// 	// 	if address == spi.PciAddress {
-		// 	// 		if spi.NumVfs != policy.Spec.NumVfs {
-		// 	// 			return false, nil
-		// 	// 		}
-		// 	// 	}
-		// 	// }
-		// 	// for _, sti := range nodeState.Status.Interfaces {
-		// 	// 	if address == sti.PciAddress {
-		// 	// 		if sti.NumVfs != policy.Spec.NumVfs {
-		// 	// 			return false, nil
-		// 	// 		}
-		// 	// 		if len(sti.VFs) != policy.Spec.NumVfs {
-		// 	// 			return false, nil
-		// 	// 		}
-		// 	// 	}
-		// 	// }
-		// }
 		return true, nil
 	})
 	if err != nil {

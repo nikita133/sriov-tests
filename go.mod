@@ -3,10 +3,10 @@ module github.com/openshift/sriov-tests
 go 1.13
 
 require (
-	github.com/intel/sriov-network-device-plugin v3.0.0+incompatible
+	github.com/intel/sriov-network-device-plugin v3.0.1-0.20191017093954-bf28fdc3e2d9+incompatible
 	github.com/onsi/ginkgo v1.10.3
 	github.com/onsi/gomega v1.7.1
-	github.com/openshift/sriov-network-operator v0.0.0-20191227022426-432454ac41d1
+	github.com/openshift/sriov-network-operator v0.0.0-20200201042246-2f3f3ce1e6eb
 	github.com/operator-framework/operator-sdk v0.12.1-0.20191112211508-82fc57de5e5b
 	k8s.io/api v0.0.0
 	k8s.io/apimachinery v0.0.0

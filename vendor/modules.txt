@@ -95,7 +95,7 @@ github.com/hpcloud/tail/winfile
 github.com/imdario/mergo
 # github.com/inconshreveable/mousetrap v1.0.0
 github.com/inconshreveable/mousetrap
-# github.com/intel/sriov-network-device-plugin v3.0.0+incompatible
+# github.com/intel/sriov-network-device-plugin v3.0.1-0.20191017093954-bf28fdc3e2d9+incompatible
 github.com/intel/sriov-network-device-plugin/pkg/types
 # github.com/joho/godotenv v1.3.0
 github.com/joho/godotenv
@@ -148,7 +148,7 @@ github.com/onsi/gomega/matchers/support/goraph/edge
 github.com/onsi/gomega/matchers/support/goraph/node
 github.com/onsi/gomega/matchers/support/goraph/util
 github.com/onsi/gomega/types
-# github.com/openshift/sriov-network-operator v0.0.0-20191227022426-432454ac41d1
+# github.com/openshift/sriov-network-operator v0.0.0-20200201042246-2f3f3ce1e6eb
 github.com/openshift/sriov-network-operator/pkg/apis
 github.com/openshift/sriov-network-operator/pkg/apis/k8s/v1
 github.com/openshift/sriov-network-operator/pkg/apis/sriovnetwork/v1
