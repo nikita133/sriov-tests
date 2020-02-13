@@ -1,0 +1,8 @@
+filters:
+  .*:
+    approvers:
+    - pliurh
+    - zshi-redhat 
+    - fedepaol
+    - schseba
+options: {}
