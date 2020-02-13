@@ -3,7 +3,8 @@ package operator
 import (
 	goctx "context"
 	// "encoding/json"
-	// "fmt"
+	"fmt"
+	"io"
 	// "reflect"
 	"strings"
 	// "testing"
@@ -19,6 +20,7 @@ import (
 	// "k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	// "k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/client-go/util/retry"
 	dynclient "sigs.k8s.io/controller-runtime/pkg/client"
 
 	// "github.com/openshift/sriov-network-operator/pkg/apis"
@@ -133,12 +135,25 @@ var _ = Describe("Operator", func() {
 				found := &sriovnetworkv1.SriovNetwork{}
 				expect := GenerateExpectedNetConfig(&new)
 
-				err = f.Client.Get(goctx.TODO(), types.NamespacedName{Namespace: old.GetNamespace(), Name: old.GetName()}, found)
-				Expect(err).NotTo(HaveOccurred())
-				found.Spec = new.Spec
-				found.Annotations = new.Annotations
-				err = f.Client.Update(goctx.TODO(), found)
-				Expect(err).NotTo(HaveOccurred())
+				retryErr := retry.RetryOnConflict(retry.DefaultRetry, func() error {
+					// Retrieve the latest version of SriovNetwork before attempting update
+					// RetryOnConflict uses exponential backoff to avoid exhausting the apiserver
+					getErr := f.Client.Get(goctx.TODO(), types.NamespacedName{Namespace: old.GetNamespace(), Name: old.GetName()}, found)
+					if getErr != nil {
+						io.WriteString(GinkgoWriter, fmt.Sprintf("Failed to get latest version of SriovNetwork: %v", getErr))
+					}
+					found.Spec = new.Spec
+					found.Annotations = new.Annotations
+					updateErr := f.Client.Update(goctx.TODO(), found)
+					if getErr != nil {
+						io.WriteString(GinkgoWriter, fmt.Sprintf("Failed to update latest version of SriovNetwork: %v", getErr))
+					}
+					return updateErr
+				})
+				if retryErr != nil {
+					Fail(fmt.Sprintf("Update failed: %v", retryErr))
+				}
+
 				ns := namespace
 				if new.Spec.NetworkNamespace != "" {
 					ns = new.Spec.NetworkNamespace
