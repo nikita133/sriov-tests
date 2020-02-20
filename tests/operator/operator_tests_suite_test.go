@@ -47,13 +47,6 @@ func TestSriovTests(t *testing.T) {
 		t.Logf("failed to add custom resource scheme to framework: %v", err)
 	}
 
-	oprctx := framework.NewTestCtx(t)
-	t.Logf("initialize operator")
-	err = oprctx.InitializeClusterResources(&framework.CleanupOptions{TestContext: oprctx, Timeout: CleanupTimeout, RetryInterval: CleanupRetryInterval})
-	if err != nil {
-		t.Fatalf("failed to initialize cluster resources: %v", err)
-	}
-
 	config.GinkgoConfig.ParallelTotal = 1
 	RegisterFailHandler(Fail)
 	RunSpecs(t, "OperatorTests Suite")

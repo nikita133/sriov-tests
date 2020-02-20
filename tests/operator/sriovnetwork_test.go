@@ -64,7 +64,7 @@ var _ = Describe("Operator", func() {
 			},
 		}
 		sriovnets := GenerateSriovNetworkCRs(namespace, specs)
-		DescribeTable("should be possible to create net-att-def",
+		DescribeTable("should be possible to create/delete net-att-def",
 			func(cr sriovnetworkv1.SriovNetwork) {
 				var err error
 				expect := GenerateExpectedNetConfig(&cr)
