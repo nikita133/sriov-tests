@@ -14,6 +14,10 @@ type EnabledNodes struct {
 	States map[string]sriovv1.SriovNetworkNodeState
 }
 
+var (
+	supportedDrivers = []string{"mlx5_core", "i40e", "ixgbe"}
+)
+
 // DiscoverSriov retrieves Sriov related information of a given cluster.
 func DiscoverSriov(clients *testclient.ClientSet, operatorNamespace string) (*EnabledNodes, error) {
 	nodeStates, err := clients.SriovNetworkNodeStates(operatorNamespace).List(metav1.ListOptions{})
@@ -31,7 +35,7 @@ func DiscoverSriov(clients *testclient.ClientSet, operatorNamespace string) (*En
 
 		node := state.Name
 		for _, itf := range state.Status.Interfaces {
-			if itf.TotalVfs > 0 {
+			if isDriverSupported(itf.Driver) {
 				res.Nodes = append(res.Nodes, node)
 				res.States[node] = state
 				break
@@ -52,7 +56,7 @@ func (n *EnabledNodes) FindOneSriovDevice(node string) (*sriovv1.InterfaceExt, e
 		return nil, fmt.Errorf("Node %s not found", node)
 	}
 	for _, itf := range s.Status.Interfaces {
-		if itf.TotalVfs > 0 {
+		if isDriverSupported(itf.Driver) {
 			return &itf, nil
 		}
 	}
@@ -84,5 +88,15 @@ func stateStable(state sriovv1.SriovNetworkNodeState) bool {
 	case "":
 		return true
 	}
+	return false
+}
+
+func isDriverSupported(driver string) bool {
+	for _, supportedDriver := range supportedDrivers {
+		if driver == supportedDriver {
+			return true
+		}
+	}
+
 	return false
 }
