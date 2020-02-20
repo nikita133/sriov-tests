@@ -34,29 +34,6 @@ import (
 
 var _ = Describe("Operator", func() {
 
-	// BeforeEach(func() {
-	// 	// get global framework variables
-	// 	f := framework.Global
-	// 	var err error
-
-	// 	// Turn off Operator Webhook
-	// 	// config := &sriovnetworkv1.SriovOperatorConfig{}
-	// 	// err = WaitForNamespacedObject(config, f.Client, namespace, "default", RetryInterval, Timeout)
-	// 	// Expect(err).NotTo(HaveOccurred())
-
-	// 	// *config.Spec.EnableInjector = false
-	// 	// err = f.Client.Update(goctx.TODO(), config)
-	// 	// Expect(err).NotTo(HaveOccurred())
-
-	// 	// daemonSet := &appsv1.DaemonSet{}
-	// 	// err = WaitForNamespacedObjectDeleted(daemonSet, f.Client, namespace, "network-resources-injector", RetryInterval, Timeout)
-	// 	// Expect(err).NotTo(HaveOccurred())
-
-	// 	// mutateCfg := &admv1beta1.MutatingWebhookConfiguration{}
-	// 	// err = WaitForNamespacedObjectDeleted(mutateCfg, f.Client, namespace, "network-resources-injector-config", RetryInterval, Timeout)
-	// 	// Expect(err).NotTo(HaveOccurred())
-	// })
-
 	Context("with single policy", func() {
 		policy1 := &sriovnetworkv1.SriovNetworkNodePolicy{
 			TypeMeta: metav1.TypeMeta{
@@ -107,7 +84,6 @@ var _ = Describe("Operator", func() {
 		}
 
 		JustBeforeEach(func() {
-			// get global framework variables
 			oprctx.Cleanup()
 		})
 
@@ -139,7 +115,7 @@ var _ = Describe("Operator", func() {
 				config := &corev1.ConfigMap{}
 				err = WaitForNamespacedObject(config, f.Client, namespace, "device-plugin-config", RetryInterval, Timeout)
 				Expect(err).NotTo(HaveOccurred())
-				err = ValidateDevicePluginConfig(policy, config.Data["config.json"])
+				err = ValidateDevicePluginConfig([]*sriovnetworkv1.SriovNetworkNodePolicy{policy}, config.Data["config.json"])
 
 				By("wait for the node state ready")
 				err = WaitForSriovNetworkNodeStateReady(nodeState, f.Client, namespace, name, RetryInterval, Timeout*3)
@@ -164,6 +140,7 @@ var _ = Describe("Operator", func() {
 							Expect(iface.Mtu).To(Equal(policy.Spec.Mtu))
 							Expect(iface.VfGroups[0].DeviceType).To(Equal(policy.Spec.DeviceType))
 							Expect(iface.VfGroups[0].ResourceName).To(Equal(policy.Spec.ResourceName))
+							Expect(iface.VfGroups[0].VfRange).To(Equal("0-"+strconv.Itoa(policy.Spec.NumVfs-1)))
 						}
 					}
 				}
@@ -249,7 +226,6 @@ var _ = Describe("Operator", func() {
 		}
 
 		JustBeforeEach(func() {
-			// get global framework variables
 			oprctx.Cleanup()
 		})
 
@@ -281,7 +257,7 @@ var _ = Describe("Operator", func() {
 				config := &corev1.ConfigMap{}
 				err = WaitForNamespacedObject(config, f.Client, namespace, "device-plugin-config", RetryInterval, Timeout)
 				Expect(err).NotTo(HaveOccurred())
-				err = ValidateDevicePluginConfig(policy, config.Data["config.json"])
+				err = ValidateDevicePluginConfig([]*sriovnetworkv1.SriovNetworkNodePolicy{policy}, config.Data["config.json"])
 
 				By("wait for the node state ready")
 				err = WaitForSriovNetworkNodeStateReady(nodeState, f.Client, namespace, name, RetryInterval, Timeout*3)
@@ -343,5 +319,143 @@ var _ = Describe("Operator", func() {
 			Entry("Set one PF with VF range", policy1),
 			Entry("Set one PF with VF range", policy2),
 		)
+	})
+
+	Context("with multiple vf index policies", func() {
+		policy1 := &sriovnetworkv1.SriovNetworkNodePolicy{
+			TypeMeta: metav1.TypeMeta{
+				Kind:       "SriovNetworkNodePolicy",
+				APIVersion: "sriovnetwork.openshift.io/v1",
+			},
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "policy1",
+				Namespace: namespace,
+			},
+			Spec: sriovnetworkv1.SriovNetworkNodePolicySpec{
+				ResourceName: "resource_1",
+				NodeSelector: map[string]string{
+					"feature.node.kubernetes.io/network-sriov.capable": "true",
+				},
+				NumVfs:   6,
+				NicSelector: sriovnetworkv1.SriovNetworkNicSelector{
+					PfNames:     []string{"ens803f1#0-1"},
+					Vendor:      "8086",
+					RootDevices: []string{"0000:86:00.1"},
+				},
+			},
+		}
+		policy2 := &sriovnetworkv1.SriovNetworkNodePolicy{
+			TypeMeta: metav1.TypeMeta{
+				Kind:       "SriovNetworkNodePolicy",
+				APIVersion: "sriovnetwork.openshift.io/v1",
+			},
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "policy2",
+				Namespace: namespace,
+			},
+			Spec: sriovnetworkv1.SriovNetworkNodePolicySpec{
+				ResourceName: "resource2",
+				NodeSelector: map[string]string{
+					"feature.node.kubernetes.io/network-sriov.capable": "true",
+				},
+				NumVfs:   6,
+				NicSelector: sriovnetworkv1.SriovNetworkNicSelector{
+					PfNames:     []string{"ens803f1#2-3"},
+					Vendor:      "8086",
+					RootDevices: []string{"0000:86:00.1"},
+				},
+			},
+		}
+
+		JustBeforeEach(func() {
+			// get global framework variables
+			oprctx.Cleanup()
+		})
+
+		It("should config sriov", 
+			func() {
+				// get global framework variables
+				f := framework.Global
+				var err error
+				policies := []*sriovnetworkv1.SriovNetworkNodePolicy{policy1, policy2}
+				By("wait for the node state ready")
+				nodeList := &corev1.NodeList{}
+				lo := &dynclient.MatchingLabels{
+					"feature.node.kubernetes.io/network-sriov.capable": "true",
+				}
+				err = f.Client.List(goctx.TODO(), nodeList, lo)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(len(nodeList.Items)).To(Equal(1))
+
+				name := nodeList.Items[0].GetName()
+				nodeState := &sriovnetworkv1.SriovNetworkNodeState{}
+				err = WaitForSriovNetworkNodeStateReady(nodeState, f.Client, namespace, name, RetryInterval, Timeout*3)
+				Expect(err).NotTo(HaveOccurred())
+
+				By("apply node policy CRs")
+				err = f.Client.Create(goctx.TODO(), policy1, &framework.CleanupOptions{TestContext: &oprctx, Timeout: ApiTimeout, RetryInterval: RetryInterval})
+				Expect(err).NotTo(HaveOccurred())
+				err = f.Client.Create(goctx.TODO(), policy2, &framework.CleanupOptions{TestContext: &oprctx, Timeout: ApiTimeout, RetryInterval: RetryInterval})
+				Expect(err).NotTo(HaveOccurred())
+
+				By("generate the config for device plugin")
+				time.Sleep(3 * time.Second)
+				config := &corev1.ConfigMap{}
+				err = WaitForNamespacedObject(config, f.Client, namespace, "device-plugin-config", RetryInterval, Timeout)
+				Expect(err).NotTo(HaveOccurred())
+				err = ValidateDevicePluginConfig(policies, config.Data["config.json"])
+
+				By("wait for the node state ready")
+				err = WaitForSriovNetworkNodeStateReady(nodeState, f.Client, namespace, name, RetryInterval, Timeout*3)
+				Expect(err).NotTo(HaveOccurred())
+
+				By("provision the cni and device plugin daemonsets")
+				cniDaemonSet := &appsv1.DaemonSet{}
+				err = WaitForDaemonSetReady(cniDaemonSet, f.Client, namespace, "sriov-cni", RetryInterval, Timeout)
+				Expect(err).NotTo(HaveOccurred())
+
+				dpDaemonSet := &appsv1.DaemonSet{}
+				err = WaitForDaemonSetReady(dpDaemonSet, f.Client, namespace, "sriov-device-plugin", RetryInterval, Timeout)
+				Expect(err).NotTo(HaveOccurred())
+
+				By("update the spec of SriovNetworkNodeState CR")
+				found := false
+				for _, address := range policy1.Spec.NicSelector.RootDevices {
+					for _, iface := range nodeState.Spec.Interfaces {
+						if iface.PciAddress == address {
+							found = true
+							Expect(iface.NumVfs).To(Equal(policy1.Spec.NumVfs))
+							Expect(len(iface.VfGroups)).To(Equal(2))
+							vg1 := sriovnetworkv1.VfGroup{
+								ResourceName: policy1.Spec.ResourceName,
+								DeviceType: "netdevice",
+								VfRange: "0-1",
+							}
+							Expect(vg1).To(BeElementOf(iface.VfGroups))
+							vg2 := sriovnetworkv1.VfGroup{
+								ResourceName: policy2.Spec.ResourceName,
+								DeviceType: "netdevice",
+								VfRange: "2-3",
+							}
+							Expect(vg2).To(BeElementOf(iface.VfGroups))
+						}
+					}
+				}
+				Expect(found).To(BeTrue())
+
+				By("update the status of SriovNetworkNodeState CR")
+				found = false
+				for _, address := range policy1.Spec.NicSelector.RootDevices {
+					for _, iface := range nodeState.Status.Interfaces {
+						if iface.PciAddress == address {
+							found = true
+							Expect(iface.NumVfs).To(Equal(policy1.Spec.NumVfs))
+							Expect(len(iface.VFs)).To(Equal(policy1.Spec.NumVfs))
+							break
+						}
+					}
+				}
+				Expect(found).To(BeTrue())
+			})
 	})
 })

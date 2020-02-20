@@ -178,7 +178,7 @@ func GenerateExpectedNetConfig(cr *sriovnetworkv1.SriovNetwork) string {
 	return fmt.Sprintf(`{ "cniVersion":"0.3.1", "name":"sriov-net", "type":"sriov", "vlan":%d,%s%s%s"vlanQoS":%d,"ipam":%s }`, cr.Spec.Vlan, spoofchk, trust, state, vlanQoS, cr.Spec.IPAM)
 }
 
-func ValidateDevicePluginConfig(np *sriovnetworkv1.SriovNetworkNodePolicy, rawConfig string) error {
+func ValidateDevicePluginConfig(nps []*sriovnetworkv1.SriovNetworkNodePolicy, rawConfig string) error {
 	rcl := dptypes.ResourceConfList{}
 
 	if err := json.Unmarshal([]byte(rawConfig), &rcl); err != nil {
@@ -189,11 +189,16 @@ func ValidateDevicePluginConfig(np *sriovnetworkv1.SriovNetworkNodePolicy, rawCo
 		return fmt.Errorf("number of resources in config is incorrect: %d", len(rcl.ResourceList))
 	}
 
-	rc := rcl.ResourceList[0]
-	if rc.IsRdma != np.Spec.IsRdma || rc.ResourceName != np.Spec.ResourceName || !validateSelector(&rc, &np.Spec.NicSelector) {
-		return fmt.Errorf("content of config is incorrect")
+	for _, rc := range rcl.ResourceList {
+		for _, np := range nps {
+			if rc.ResourceName != np.Spec.ResourceName {
+				continue
+			}
+			if rc.IsRdma != np.Spec.IsRdma || rc.ResourceName != np.Spec.ResourceName || !validateSelector(&rc, &np.Spec.NicSelector) {
+				return fmt.Errorf("content of config is incorrect")
+			}
+		}
 	}
-
 	return nil
 }
 
