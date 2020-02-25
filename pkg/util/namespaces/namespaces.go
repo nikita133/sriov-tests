@@ -72,9 +72,11 @@ func Clean(operatorNamespace, namespace string, cs *testclient.ClientSet) error 
 		if p.Name != "default" {
 			err := cs.Delete(context.Background(), &p)
 			if err != nil {
-				return fmt.Errorf("Failed to delete policies %v", err)
+				return fmt.Errorf("Failed to delete policy %v", err)
 			}
 		}
 	}
-	return nil
+
+	network := sriovv1.SriovNetwork{}
+	return cs.DeleteAllOf(context.Background(), &network, runtimeclient.InNamespace(operatorNamespace))
 }

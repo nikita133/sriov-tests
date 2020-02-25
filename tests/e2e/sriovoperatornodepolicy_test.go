@@ -5,8 +5,8 @@ import (
 	// "reflect"
 	// "strings"
 	// "testing"
-	"time"
 	"strconv"
+	"time"
 
 	// dptypes "github.com/intel/sriov-network-device-plugin/pkg/types"
 	framework "github.com/operator-framework/operator-sdk/pkg/test"
@@ -87,7 +87,7 @@ var _ = Describe("Operator", func() {
 			oprctx.Cleanup()
 		})
 
-		DescribeTable("should config sriov", 
+		DescribeTable("should config sriov",
 			func(policy *sriovnetworkv1.SriovNetworkNodePolicy) {
 				// get global framework variables
 				f := framework.Global
@@ -140,7 +140,7 @@ var _ = Describe("Operator", func() {
 							Expect(iface.Mtu).To(Equal(policy.Spec.Mtu))
 							Expect(iface.VfGroups[0].DeviceType).To(Equal(policy.Spec.DeviceType))
 							Expect(iface.VfGroups[0].ResourceName).To(Equal(policy.Spec.ResourceName))
-							Expect(iface.VfGroups[0].VfRange).To(Equal("0-"+strconv.Itoa(policy.Spec.NumVfs-1)))
+							Expect(iface.VfGroups[0].VfRange).To(Equal("0-" + strconv.Itoa(policy.Spec.NumVfs-1)))
 						}
 					}
 				}
@@ -156,12 +156,12 @@ var _ = Describe("Operator", func() {
 							Expect(iface.Mtu).To(Equal(policy.Spec.Mtu))
 							Expect(len(iface.VFs)).To(Equal(policy.Spec.NumVfs))
 							for _, vf := range iface.VFs {
-								if policy.Spec.DeviceType == "netdevice" || policy.Spec.DeviceType == ""{
+								if policy.Spec.DeviceType == "netdevice" || policy.Spec.DeviceType == "" {
 									Expect(vf.Mtu).To(Equal(policy.Spec.Mtu))
 								}
 								if policy.Spec.DeviceType == "vfio" {
 									Expect(vf.Driver).To(Equal(policy.Spec.DeviceType))
-								} 
+								}
 							}
 							break
 						}
@@ -229,7 +229,7 @@ var _ = Describe("Operator", func() {
 			oprctx.Cleanup()
 		})
 
-		DescribeTable("should config sriov", 
+		DescribeTable("should config sriov",
 			func(policy *sriovnetworkv1.SriovNetworkNodePolicy) {
 				// get global framework variables
 				f := framework.Global
@@ -282,7 +282,7 @@ var _ = Describe("Operator", func() {
 							Expect(iface.Mtu).To(Equal(policy.Spec.Mtu))
 							Expect(iface.VfGroups[0].DeviceType).To(Equal(policy.Spec.DeviceType))
 							Expect(iface.VfGroups[0].ResourceName).To(Equal(policy.Spec.ResourceName))
-							
+
 							pfName, rngStart, rngEnd, err := sriovnetworkv1.ParsePFName(policy.Spec.NicSelector.PfNames[0])
 							Expect(err).NotTo(HaveOccurred())
 							rng := strconv.Itoa(rngStart) + "-" + strconv.Itoa(rngEnd)
@@ -303,12 +303,12 @@ var _ = Describe("Operator", func() {
 							Expect(iface.Mtu).To(Equal(policy.Spec.Mtu))
 							Expect(len(iface.VFs)).To(Equal(policy.Spec.NumVfs))
 							for _, vf := range iface.VFs {
-								if policy.Spec.DeviceType == "netdevice" || policy.Spec.DeviceType == ""{
+								if policy.Spec.DeviceType == "netdevice" || policy.Spec.DeviceType == "" {
 									Expect(vf.Mtu).To(Equal(policy.Spec.Mtu))
 								}
 								if policy.Spec.DeviceType == "vfio" {
 									Expect(vf.Driver).To(Equal(policy.Spec.DeviceType))
-								} 
+								}
 							}
 							break
 						}
@@ -336,7 +336,7 @@ var _ = Describe("Operator", func() {
 				NodeSelector: map[string]string{
 					"feature.node.kubernetes.io/network-sriov.capable": "true",
 				},
-				NumVfs:   6,
+				NumVfs: 6,
 				NicSelector: sriovnetworkv1.SriovNetworkNicSelector{
 					PfNames:     []string{"ens803f1#0-1"},
 					Vendor:      "8086",
@@ -358,7 +358,7 @@ var _ = Describe("Operator", func() {
 				NodeSelector: map[string]string{
 					"feature.node.kubernetes.io/network-sriov.capable": "true",
 				},
-				NumVfs:   6,
+				NumVfs: 6,
 				NicSelector: sriovnetworkv1.SriovNetworkNicSelector{
 					PfNames:     []string{"ens803f1#2-3"},
 					Vendor:      "8086",
@@ -372,7 +372,7 @@ var _ = Describe("Operator", func() {
 			oprctx.Cleanup()
 		})
 
-		It("should config sriov", 
+		It("should config sriov",
 			func() {
 				// get global framework variables
 				f := framework.Global
@@ -428,14 +428,14 @@ var _ = Describe("Operator", func() {
 							Expect(len(iface.VfGroups)).To(Equal(2))
 							vg1 := sriovnetworkv1.VfGroup{
 								ResourceName: policy1.Spec.ResourceName,
-								DeviceType: "netdevice",
-								VfRange: "0-1",
+								DeviceType:   "netdevice",
+								VfRange:      "0-1",
 							}
 							Expect(vg1).To(BeElementOf(iface.VfGroups))
 							vg2 := sriovnetworkv1.VfGroup{
 								ResourceName: policy2.Spec.ResourceName,
-								DeviceType: "netdevice",
-								VfRange: "2-3",
+								DeviceType:   "netdevice",
+								VfRange:      "2-3",
 							}
 							Expect(vg2).To(BeElementOf(iface.VfGroups))
 						}
