@@ -52,10 +52,7 @@ var _ = Describe("Operator", func() {
 				Priority: 99,
 				Mtu:      9000,
 				NumVfs:   6,
-				NicSelector: sriovnetworkv1.SriovNetworkNicSelector{
-					Vendor:      "8086",
-					RootDevices: []string{"0000:86:00.1"},
-				},
+				NicSelector: sriovnetworkv1.SriovNetworkNicSelector{},
 				DeviceType: "vfio-pci",
 			},
 		}
@@ -76,10 +73,7 @@ var _ = Describe("Operator", func() {
 				Priority: 99,
 				Mtu:      9000,
 				NumVfs:   6,
-				NicSelector: sriovnetworkv1.SriovNetworkNicSelector{
-					Vendor:      "8086",
-					RootDevices: []string{"0000:86:00.1"},
-				},
+				NicSelector: sriovnetworkv1.SriovNetworkNicSelector{},
 			},
 		}
 
@@ -89,6 +83,8 @@ var _ = Describe("Operator", func() {
 
 		DescribeTable("should config sriov",
 			func(policy *sriovnetworkv1.SriovNetworkNodePolicy) {
+				policy.Spec.NicSelector.RootDevices = []string{sriovIface.PciAddress}
+				policy.Spec.NicSelector.PfNames = []string{sriovIface.Name}
 				// get global framework variables
 				f := framework.Global
 				var err error
@@ -103,7 +99,7 @@ var _ = Describe("Operator", func() {
 
 				name := nodeList.Items[0].GetName()
 				nodeState := &sriovnetworkv1.SriovNetworkNodeState{}
-				err = WaitForSriovNetworkNodeStateReady(nodeState, f.Client, namespace, name, RetryInterval, Timeout*3)
+				err = WaitForSriovNetworkNodeStateReady(nodeState, f.Client, namespace, name, RetryInterval, Timeout*5)
 				Expect(err).NotTo(HaveOccurred())
 
 				By("apply node policy CR")
@@ -118,7 +114,7 @@ var _ = Describe("Operator", func() {
 				err = ValidateDevicePluginConfig([]*sriovnetworkv1.SriovNetworkNodePolicy{policy}, config.Data["config.json"])
 
 				By("wait for the node state ready")
-				err = WaitForSriovNetworkNodeStateReady(nodeState, f.Client, namespace, name, RetryInterval, Timeout*3)
+				err = WaitForSriovNetworkNodeStateReady(nodeState, f.Client, namespace, name, RetryInterval, Timeout*5)
 				Expect(err).NotTo(HaveOccurred())
 
 				By("provision the cni and device plugin daemonsets")
@@ -193,9 +189,7 @@ var _ = Describe("Operator", func() {
 				Mtu:      9000,
 				NumVfs:   6,
 				NicSelector: sriovnetworkv1.SriovNetworkNicSelector{
-					PfNames:     []string{"ens803f1#0-5"},
-					Vendor:      "8086",
-					RootDevices: []string{"0000:86:00.1"},
+					PfNames:     []string{"#0-5"},
 				},
 				DeviceType: "vfio-pci",
 			},
@@ -218,9 +212,7 @@ var _ = Describe("Operator", func() {
 				Mtu:      9000,
 				NumVfs:   6,
 				NicSelector: sriovnetworkv1.SriovNetworkNicSelector{
-					PfNames:     []string{"ens803f1#0-0"},
-					Vendor:      "8086",
-					RootDevices: []string{"0000:86:00.1"},
+					PfNames:     []string{"#0-0"},
 				},
 			},
 		}
@@ -231,6 +223,8 @@ var _ = Describe("Operator", func() {
 
 		DescribeTable("should config sriov",
 			func(policy *sriovnetworkv1.SriovNetworkNodePolicy) {
+				policy.Spec.NicSelector.RootDevices = []string{sriovIface.PciAddress}
+				policy.Spec.NicSelector.PfNames[0] = sriovIface.Name + policy.Spec.NicSelector.PfNames[0]
 				// get global framework variables
 				f := framework.Global
 				var err error
@@ -245,7 +239,7 @@ var _ = Describe("Operator", func() {
 
 				name := nodeList.Items[0].GetName()
 				nodeState := &sriovnetworkv1.SriovNetworkNodeState{}
-				err = WaitForSriovNetworkNodeStateReady(nodeState, f.Client, namespace, name, RetryInterval, Timeout*3)
+				err = WaitForSriovNetworkNodeStateReady(nodeState, f.Client, namespace, name, RetryInterval, Timeout*5)
 				Expect(err).NotTo(HaveOccurred())
 
 				By("apply node policy CR")
@@ -260,7 +254,7 @@ var _ = Describe("Operator", func() {
 				err = ValidateDevicePluginConfig([]*sriovnetworkv1.SriovNetworkNodePolicy{policy}, config.Data["config.json"])
 
 				By("wait for the node state ready")
-				err = WaitForSriovNetworkNodeStateReady(nodeState, f.Client, namespace, name, RetryInterval, Timeout*3)
+				err = WaitForSriovNetworkNodeStateReady(nodeState, f.Client, namespace, name, RetryInterval, Timeout*5)
 				Expect(err).NotTo(HaveOccurred())
 
 				By("provision the cni and device plugin daemonsets")
@@ -338,9 +332,7 @@ var _ = Describe("Operator", func() {
 				},
 				NumVfs: 6,
 				NicSelector: sriovnetworkv1.SriovNetworkNicSelector{
-					PfNames:     []string{"ens803f1#0-1"},
-					Vendor:      "8086",
-					RootDevices: []string{"0000:86:00.1"},
+					PfNames:     []string{"#0-1"},
 				},
 			},
 		}
@@ -360,9 +352,7 @@ var _ = Describe("Operator", func() {
 				},
 				NumVfs: 6,
 				NicSelector: sriovnetworkv1.SriovNetworkNicSelector{
-					PfNames:     []string{"ens803f1#2-3"},
-					Vendor:      "8086",
-					RootDevices: []string{"0000:86:00.1"},
+					PfNames:     []string{"#2-3"},
 				},
 			},
 		}
@@ -374,6 +364,10 @@ var _ = Describe("Operator", func() {
 
 		It("should config sriov",
 			func() {
+				policy1.Spec.NicSelector.RootDevices = []string{sriovIface.PciAddress}
+				policy1.Spec.NicSelector.PfNames[0] = sriovIface.Name + policy1.Spec.NicSelector.PfNames[0]
+				policy2.Spec.NicSelector.RootDevices = []string{sriovIface.PciAddress}
+				policy2.Spec.NicSelector.PfNames[0] = sriovIface.Name + policy2.Spec.NicSelector.PfNames[0]
 				// get global framework variables
 				f := framework.Global
 				var err error
@@ -389,7 +383,7 @@ var _ = Describe("Operator", func() {
 
 				name := nodeList.Items[0].GetName()
 				nodeState := &sriovnetworkv1.SriovNetworkNodeState{}
-				err = WaitForSriovNetworkNodeStateReady(nodeState, f.Client, namespace, name, RetryInterval, Timeout*3)
+				err = WaitForSriovNetworkNodeStateReady(nodeState, f.Client, namespace, name, RetryInterval, Timeout*5)
 				Expect(err).NotTo(HaveOccurred())
 
 				By("apply node policy CRs")
@@ -406,7 +400,7 @@ var _ = Describe("Operator", func() {
 				err = ValidateDevicePluginConfig(policies, config.Data["config.json"])
 
 				By("wait for the node state ready")
-				err = WaitForSriovNetworkNodeStateReady(nodeState, f.Client, namespace, name, RetryInterval, Timeout*3)
+				err = WaitForSriovNetworkNodeStateReady(nodeState, f.Client, namespace, name, RetryInterval, Timeout*5)
 				Expect(err).NotTo(HaveOccurred())
 
 				By("provision the cni and device plugin daemonsets")

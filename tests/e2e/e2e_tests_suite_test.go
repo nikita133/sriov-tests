@@ -16,7 +16,7 @@ import (
 	// corev1 "k8s.io/api/core/v1"
 	// "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	// "k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime"
 	// "k8s.io/apimachinery/pkg/types"
 	// "k8s.io/apimachinery/pkg/util/wait"
 	// dynclient "sigs.k8s.io/controller-runtime/pkg/client"
@@ -30,6 +30,8 @@ import (
 	. "github.com/onsi/gomega"
 
 	. "github.com/openshift/sriov-tests/pkg/util"
+	"github.com/openshift/sriov-tests/pkg/util/cluster"
+	testclient "github.com/openshift/sriov-tests/pkg/util/client"
 )
 
 var namespace = "openshift-sriov-network-operator"
@@ -52,6 +54,9 @@ func TestSriovTests(t *testing.T) {
 	RunSpecs(t, "OperatorTests Suite")
 }
 
+var sriovInfos *cluster.EnabledNodes
+var sriovIface *sriovnetworkv1.InterfaceExt
+
 var _ = BeforeSuite(func() {
 	// get global framework variables
 	f := framework.Global
@@ -59,6 +64,15 @@ var _ = BeforeSuite(func() {
 	deploy := &appsv1.Deployment{}
 	err := WaitForNamespacedObject(deploy, f.Client, namespace, "sriov-network-operator", RetryInterval, Timeout)
 	Expect(err).NotTo(HaveOccurred())
+	clients := testclient.New("", func(scheme *runtime.Scheme) {
+		sriovnetworkv1.AddToScheme(scheme)
+	})
+	sriovInfos, err = cluster.DiscoverSriov(clients, namespace)
+	Expect(err).ToNot(HaveOccurred())
+	Expect(len(sriovInfos.Nodes)).Should(BeNumerically(">=", 1))
+	sriovIface, err = sriovInfos.FindOneSriovDevice(sriovInfos.Nodes[0])
+	Expect(err).ToNot(HaveOccurred())
+	Expect(sriovIface).ToNot(BeNil())
 })
 
 var _ = AfterSuite(func() {
