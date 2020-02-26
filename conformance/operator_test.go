@@ -2,6 +2,7 @@ package conformance
 
 import (
 	"context"
+	"fmt"
 	"strings"
 	"time"
 
@@ -275,10 +276,16 @@ var _ = Describe("operator", func() {
 		Context("VF flags", func() {
 			debugPod := &corev1.Pod{}
 			intf := &sriovv1.InterfaceExt{}
+			numVfs := 5
 
 			validationFunction := func(networks []string, containsFunc func(line string) bool) {
+				// Validate all the virtual functions are in the host namespace
+				_, err := findPodVFInHost(intf.Name, numVfs, debugPod)
+				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(Equal("failed to find the vf number that was moved into the pod"))
+
 				podObj := pod.DefineWithNetworks(networks)
-				err := clients.Create(context.Background(), podObj)
+				err = clients.Create(context.Background(), podObj)
 				Expect(err).ToNot(HaveOccurred())
 				Eventually(func() corev1.PodPhase {
 					podObj, err = clients.Pods(namespaces.Test).Get(podObj.Name, metav1.GetOptions{})
@@ -290,14 +297,15 @@ var _ = Describe("operator", func() {
 				stdout, stderr, err := pod.ExecCommand(clients, podObj, "ip", "addr", "show", "dev", "net1")
 				Expect(err).ToNot(HaveOccurred())
 				Expect(stderr).To(Equal(""))
-				podMac := getMacFrom(stdout)
+				vfID, err := findPodVFInHost(intf.Name, numVfs, debugPod)
+				Expect(err).ToNot(HaveOccurred())
 				stdout, stderr, err = pod.ExecCommand(clients, debugPod, "ip", "link", "show")
 				Expect(err).ToNot(HaveOccurred())
 				Expect(stderr).To(Equal(""))
 
 				found := false
 				for _, line := range strings.Split(stdout, "\n") {
-					if strings.Contains(line, podMac) && containsFunc(line) {
+					if strings.Contains(line, fmt.Sprintf("vf %d ", vfID)) && containsFunc(line) {
 						found = true
 						break
 					}
@@ -342,7 +350,7 @@ var _ = Describe("operator", func() {
 						NodeSelector: map[string]string{
 							"kubernetes.io/hostname": node,
 						},
-						NumVfs:       5,
+						NumVfs:       numVfs,
 						ResourceName: "testresource",
 						Priority:     99,
 						NicSelector: sriovv1.SriovNetworkNicSelector{
@@ -363,14 +371,14 @@ var _ = Describe("operator", func() {
 					IgnoreExtras,
 					Fields{
 						"Name":   Equal(intf.Name),
-						"NumVfs": Equal(5),
+						"NumVfs": Equal(numVfs),
 					})))
 
 				Eventually(func() bool {
 					res, err := cluster.SriovStable(operatorNamespace, clients)
 					Expect(err).ToNot(HaveOccurred())
 					return res
-				}, 3*time.Minute, 1*time.Second).Should(BeTrue())
+				}, 7*time.Minute, 1*time.Second).Should(BeTrue())
 
 				debugPod = pod.DefineWithHostNetwork()
 				err = clients.Create(context.Background(), debugPod)
@@ -641,16 +649,30 @@ var _ = Describe("operator", func() {
 	})
 })
 
-func getMacFrom(interfaceOutput string) string {
-	interfaceOutput = strings.TrimSpace(interfaceOutput)
-	lines := strings.Split(interfaceOutput, "\n")
-	Expect(len(lines)).To(Equal(6))
+// findPodVFInHost goes over the virtual functions related to the physical function that was provided on the host
+// and return the virtual function id if founds or error if not.
+// return error also if more than one virtual functions is missing in the host network namespace
+func findPodVFInHost(pfName string, numVfs int, podObj *corev1.Pod) (int, error) {
+	found := false
+	vfID := 0
+	for idx := 0; idx < numVfs; idx++ {
+		stdout, _, err := pod.ExecCommand(clients, podObj, "ip", "link", "show", fmt.Sprintf("%sv%d", pfName, idx))
+		if err != nil && strings.Contains(stdout, "does not exist") {
+			// Validate that only one virtual function was moved
+			if found {
+				return vfID, fmt.Errorf("found more that one virtual function was moved from the host network namespace")
+			}
 
-	macConfig := strings.TrimSpace(lines[1])
-	macConfigSplit := strings.Split(macConfig, " ")
-	Expect(len(macConfigSplit)).To(Equal(4))
+			found = true
+			vfID = idx
+		}
+	}
 
-	return macConfigSplit[1]
+	if found {
+		return vfID, nil
+	}
+
+	return vfID, fmt.Errorf("failed to find the vf number that was moved into the pod")
 }
 
 func daemonsScheduledOnNodes(selector string) bool {
