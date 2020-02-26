@@ -51,7 +51,7 @@ var _ = Describe("Operator", func() {
 		Expect(err).NotTo(HaveOccurred())
 	})
 
-	Context("When operator up", func() {
+	Context("When is up", func() {
 		It("should have default operator config", func() {
 			// get global framework variables
 			f := framework.Global
@@ -87,7 +87,7 @@ var _ = Describe("Operator", func() {
 		)
 	})
 
-	Context("Update operator config", func() {
+	Context("With SriovOperatorConfig", func() {
 
 		It("should be able to turn network-resources-injector on/off", func() {
 			By("set disable to enableInjector")
