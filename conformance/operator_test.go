@@ -470,6 +470,57 @@ var _ = Describe("operator", func() {
 				validateNetworkFields(copyObj, trustChkStatusValidation)
 			})
 
+			// 25961
+			It("Should configure the the link state variable", func() {
+				sriovNetwork := &sriovv1.SriovNetwork{
+					ObjectMeta: metav1.ObjectMeta{Name: "statenetwork", Namespace: operatorNamespace},
+					Spec: sriovv1.SriovNetworkSpec{
+						ResourceName: "testresource",
+						IPAM: `{"type":"host-local",
+									"subnet":"10.10.10.0/24",
+									"rangeStart":"10.10.10.171",
+									"rangeEnd":"10.10.10.181",
+									"routes":[{"dst":"0.0.0.0/0"}],
+									"gateway":"10.10.10.1"}`,
+						NetworkNamespace: namespaces.Test,
+					}}
+
+				By("configuring link-state as enabled")
+				enabledLinkNetwork := sriovNetwork.DeepCopy()
+				enabledLinkNetwork.Spec.LinkState = "enable"
+				linkStateChkStatusValidation := "link-state enable"
+				err := clients.Create(context.Background(), enabledLinkNetwork)
+				Expect(err).ToNot(HaveOccurred())
+
+				validateNetworkFields(enabledLinkNetwork, linkStateChkStatusValidation)
+
+				By("removing sriov network")
+				err = clients.Delete(context.Background(), enabledLinkNetwork)
+				Expect(err).ToNot(HaveOccurred())
+
+				By("configuring link-state as disable")
+				disabledLinkNetwork := sriovNetwork.DeepCopy()
+				disabledLinkNetwork.Spec.LinkState = "disable"
+				linkStateChkStatusValidation = "link-state disable"
+				err = clients.Create(context.Background(), disabledLinkNetwork)
+				Expect(err).ToNot(HaveOccurred())
+
+				validateNetworkFields(disabledLinkNetwork, linkStateChkStatusValidation)
+
+				By("removing sriov network")
+				err = clients.Delete(context.Background(), disabledLinkNetwork)
+				Expect(err).ToNot(HaveOccurred())
+
+				By("configuring link-state as auto")
+				autoLinkNetwork := sriovNetwork.DeepCopy()
+				autoLinkNetwork.Spec.LinkState = "auto"
+				linkStateChkStatusValidation = "link-state auto"
+				err = clients.Create(context.Background(), autoLinkNetwork)
+				Expect(err).ToNot(HaveOccurred())
+
+				validateNetworkFields(autoLinkNetwork, linkStateChkStatusValidation)
+			})
+
 			// 25963
 			Describe("rate limit", func() {
 				It("Should configure the requested rate limit flags under the vf", func() {
