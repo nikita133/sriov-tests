@@ -39,7 +39,7 @@ var _ = Describe("operator", func() {
 			res, err := cluster.SriovStable(operatorNamespace, clients)
 			Expect(err).ToNot(HaveOccurred())
 			return res
-		}, 3*time.Minute, 1*time.Second).Should(Equal(true))
+		}, 10*time.Minute, 1*time.Second).Should(Equal(true))
 	})
 
 	var _ = Describe("Configuration", func() {
@@ -382,9 +382,9 @@ var _ = Describe("operator", func() {
 					res, err := cluster.SriovStable(operatorNamespace, clients)
 					Expect(err).ToNot(HaveOccurred())
 					return res
-				}, 7*time.Minute, 1*time.Second).Should(BeTrue())
+				}, 10*time.Minute, 1*time.Second).Should(BeTrue())
 
-				debugPod = pod.DefineWithHostNetwork()
+				debugPod = pod.DefineWithHostNetwork(node)
 				err = clients.Create(context.Background(), debugPod)
 				Expect(err).ToNot(HaveOccurred())
 				Eventually(func() corev1.PodPhase {
@@ -641,7 +641,7 @@ var _ = Describe("operator", func() {
 					stable, err := cluster.SriovStable(operatorNamespace, clients)
 					Expect(err).ToNot(HaveOccurred())
 					return stable
-				}, 5*time.Minute, 1*time.Second).Should(Equal(true))
+				}, 10*time.Minute, 1*time.Second).Should(Equal(true))
 
 				Eventually(func() int64 {
 					testedNode, err := clients.Nodes().Get(node, metav1.GetOptions{})

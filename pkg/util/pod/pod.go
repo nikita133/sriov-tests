@@ -36,9 +36,12 @@ func DefineWithNetworks(networks []string) *corev1.Pod {
 	return podObject
 }
 
-func DefineWithHostNetwork() *corev1.Pod {
+func DefineWithHostNetwork(nodeName string) *corev1.Pod {
 	podObject := getDefinition()
 	podObject.Spec.HostNetwork = true
+	podObject.Spec.NodeSelector = map[string]string{
+		"kubernetes.io/hostname": nodeName,
+	}
 
 	return podObject
 }
