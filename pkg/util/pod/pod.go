@@ -2,24 +2,26 @@ package pod
 
 import (
 	"bytes"
+	"os"
+	"strings"
+
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/util/rand"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/tools/remotecommand"
 	"k8s.io/utils/pointer"
-	"os"
-	"strings"
 
 	testclient "github.com/openshift/sriov-tests/pkg/util/client"
 	"github.com/openshift/sriov-tests/pkg/util/namespaces"
 )
 
+const hostnameLabel = "kubernetes.io/hostname"
+
 func getDefinition() *corev1.Pod {
-	podName := "testpod" + rand.String(12)
 	podObject := &corev1.Pod{
-		ObjectMeta: metav1.ObjectMeta{Name: podName,
-			Namespace: namespaces.Test},
+		ObjectMeta: metav1.ObjectMeta{
+			GenerateName: "testpod-",
+			Namespace:    namespaces.Test},
 		Spec: corev1.PodSpec{
 			TerminationGracePeriodSeconds: pointer.Int64Ptr(0),
 			Containers: []corev1.Container{{Name: "test",
@@ -44,6 +46,27 @@ func DefineWithHostNetwork(nodeName string) *corev1.Pod {
 	}
 
 	return podObject
+}
+
+// RedefineWithNodeSelector uppdates the pod definition with a node selector
+func RedefineWithNodeSelector(pod *corev1.Pod, node string) *corev1.Pod {
+	pod.Spec.NodeSelector = map[string]string{
+		hostnameLabel: node,
+	}
+	return pod
+}
+
+// RedefineWithCommand updates the pod defintion with a different command
+func RedefineWithCommand(pod *corev1.Pod, command []string, args []string) *corev1.Pod {
+	pod.Spec.Containers[0].Command = command
+	pod.Spec.Containers[0].Args = args
+	return pod
+}
+
+// RedefineWithRestartPolicy updates the pod defintion with a restart policy
+func RedefineWithRestartPolicy(pod *corev1.Pod, restartPolicy corev1.RestartPolicy) *corev1.Pod {
+	pod.Spec.RestartPolicy = restartPolicy
+	return pod
 }
 
 // ExecCommand runs command in the pod and returns buffer output
